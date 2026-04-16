@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <!-- html2pdf removed — using native browser print-to-PDF instead -->
   <style>
     /* ===== RESET & BASE ===== */
@@ -403,6 +404,27 @@
       height: 15px;
     }
 
+    /* ===== DOWNLOAD EXCEL BUTTON ===== */
+    .btn-excel {
+      background: linear-gradient(135deg, #107c41, #217346);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      box-shadow: 0 4px 14px rgba(16, 124, 65, 0.3);
+      border: none;
+    }
+
+    .btn-excel:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(16, 124, 65, 0.45);
+    }
+
+    .btn-excel svg {
+      width: 15px;
+      height: 15px;
+    }
+
     /* ===== LOADER ===== */
     .loader-card {
       text-align: center;
@@ -703,6 +725,18 @@
                 <line x1="9" y1="15" x2="15" y2="15" />
               </svg>
               Download PDF
+            </button>
+            <button class="btn-excel" onclick="downloadExcel()" id="excelBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <rect x="9" y="10" width="6" height="10" />
+                <line x1="12" y1="10" x2="12" y2="20" />
+                <line x1="9" y1="13" x2="15" y2="13" />
+                <line x1="9" y1="17" x2="15" y2="17" />
+              </svg>
+              Download Excel
             </button>
           </div>
         </div>
@@ -1009,6 +1043,44 @@
         win.print();
         // Don't auto-close — let user save as PDF first
       };
+    }
+
+    function downloadExcel() {
+      const course = document.getElementById('printTitle').textContent || 'Course';
+      const body = document.getElementById('resultsBody');
+      const rows = Array.from(body.querySelectorAll('tr'));
+
+      if (rows.length === 0 || rows[0].innerText.includes("No students found")) {
+        alert("No data to export");
+        return;
+      }
+
+      const data = rows.map((tr, i) => {
+        const tds = tr.querySelectorAll('td');
+        return {
+          "Sl No": tds[0].innerText,
+          "Student Name": tds[1].innerText,
+          "College Roll No": tds[2].innerText,
+          "Programme": tds[3].innerText
+        };
+      });
+
+      const worksheet = XLSX.utils.json_to_sheet(data);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Enrolled Students");
+
+      // Auto-size columns
+      const wscols = [
+        { wch: 6 },
+        { wch: 30 },
+        { wch: 20 },
+        { wch: 35 }
+      ];
+      worksheet['!cols'] = wscols;
+
+      // File name formatting
+      const safeCourseName = course.replace(/[/\\?%*:|"<>]/g, '-');
+      XLSX.writeFile(workbook, `${safeCourseName}_Students.xlsx`);
     }
 
     /* ─── AUTO-LOAD ON PAGE OPEN ─────────────────────────── */
